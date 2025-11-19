@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../../utils/api";
 import toast from "react-hot-toast";
 import { GiCash } from "react-icons/gi";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -71,7 +74,7 @@ const Signup = () => {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-900">Password</label>
             <input
               type="password"
@@ -80,9 +83,30 @@ const Signup = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="mt-2 block w-full rounded-md bg-white px-3 py-2 outline outline-1 outline-gray-300"
             />
+          </div> */}
+
+          <div className="relative mt-2">
+            <label className="block text-sm font-medium text-gray-900">Password</label>
+            <input
+              type={showPassword ? "text" : "password"} // toggle type
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline outline-1 outline-gray-300 focus:outline-2 focus:outline-[--color-primary] mt-2"
+            />
+
+            {/* Eye button */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-1 right-3 top-6 flex items-center text-gray-600"
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
           </div>
 
-          <div>
+
+          {/* <div>
             <label className="block text-sm font-medium text-gray-900">Confirm Password</label>
             <input
               type="password"
@@ -91,6 +115,25 @@ const Signup = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="mt-2 block w-full rounded-md bg-white px-3 py-2 outline outline-1 outline-gray-300"
             />
+          </div> */}
+          <div className="relative mt-2">
+            <label className="block text-sm font-medium text-gray-900">Confirm Password</label>
+            <input
+              type={showConfirmPassword ? "text" : "password"} // toggle type
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline outline-1 outline-gray-300 focus:outline-2 focus:outline-[--color-primary] mt-2"
+            />
+
+            {/* Eye button */}
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-3 top-6 flex items-center text-gray-600"
+            >
+              {showConfirmPassword ? "🙈" : "👁️"}
+            </button>
           </div>
 
           <button

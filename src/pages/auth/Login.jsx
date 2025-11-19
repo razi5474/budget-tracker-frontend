@@ -8,7 +8,8 @@ const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
+  
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -55,17 +56,24 @@ const Login = () => {
           </div>
 
           {/* Password */}
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-900">Password</label>
-            </div>
+          <div className="relative mt-2">
+            <label className="block text-sm font-medium text-gray-900">Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"} // toggle type
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline outline-1 outline-gray-300 focus:outline-2 focus:outline-[--color-primary]"
+              className="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline outline-1 outline-gray-300 focus:outline-2 focus:outline-[--color-primary] mt-2"
             />
+
+            {/* Eye button */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-1 right-3 top-6 flex items-center text-gray-600"
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
           </div>
 
           {/* Submit Button */}
