@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "../../components/Sidebar";
 import SummeryCard from "../../components/SummeryCard";
 import Categorylist from "../../components/Categorylist";
@@ -24,29 +25,26 @@ const Home = () => {
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
 
-  // New state for summary cards
   const [totalBudget, setTotalBudget] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const monthKey = `${selectedYear}-${selectedMonth.toString().padStart(2, "0")}`;
 
-      // 1️⃣ Fetch categories
-      const catRes = await api.get("/category");
+      const [catRes, budgetRes, expRes] = await Promise.all([
+        api.get("/category"),
+        api.get(`/budget?month=${monthKey}`),
+        api.get(`/expense?month=${monthKey}`)
+      ]);
+
       const cats = catRes.data;
-
-      // 2️⃣ Fetch budgets
-      const budgetRes = await api.get(`/budget?month=${monthKey}`);
       const budgets = budgetRes.data;
-
-      // 3️⃣ Fetch expenses
-      const expRes = await api.get(`/expense?month=${monthKey}`);
       const expData = expRes.data;
 
-      // 4️⃣ Map budgets by categoryID
       const budgetsMap = {};
       budgets.forEach(b => {
         if (b.categoryID) {
@@ -55,7 +53,6 @@ const Home = () => {
         }
       });
 
-      // 5️⃣ Merge spent & limit into categories
       const updatedCategories = cats.map(c => {
         const spent = expData
           .filter(e => {
@@ -72,17 +69,17 @@ const Home = () => {
       setCategories(updatedCategories);
       setExpenses(expData);
 
-      // 6️⃣ Calculate summary card data
       const totalBudgetCalc = updatedCategories.reduce((sum, c) => sum + (c.limit || 0), 0);
       const totalExpensesCalc = expData.reduce((sum, e) => sum + (e.amount || 0), 0);
-      const balanceCalc = totalBudgetCalc - totalExpensesCalc;
-
+      
       setTotalBudget(totalBudgetCalc);
       setTotalExpenses(totalExpensesCalc);
-      setBalance(balanceCalc);
+      setBalance(totalBudgetCalc - totalExpensesCalc);
 
     } catch (err) {
       console.error("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,56 +88,101 @@ const Home = () => {
   }, [selectedMonth, selectedYear]);
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-[#f8fafc]">
       <Sidebar />
 
-      <div className="flex-1 lg:ml-64 p-6">
-        <DashboardHeader
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          setSelectedMonth={setSelectedMonth}
-          setSelectedYear={setSelectedYear}
-        />
+      <motion.main 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex-1 lg:ml-[280px] p-4 md:p-8 lg:p-12"
+      >
+        {/* Header Section */}
+        <section className="mb-10">
+          <DashboardHeader
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            setSelectedMonth={setSelectedMonth}
+            setSelectedYear={setSelectedYear}
+          />
+        </section>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SummeryCard title="Total Budget" amount={totalBudget} icon={<GiReceiveMoney />} />
-          <SummeryCard title="Total Expenses" amount={totalExpenses} icon={<GiExpense />} />
-          <SummeryCard title="Balance" amount={balance} icon={<GiWallet />} />
+        {/* Stats Grid */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <SummeryCard title="Total Budget" amount={totalBudget} icon={<GiReceiveMoney />} delay={0.1} />
+          <SummeryCard title="Total Expenses" amount={totalExpenses} icon={<GiExpense />} delay={0.2} />
+          <SummeryCard title="Balance Remaining" amount={balance} icon={<GiWallet />} delay={0.3} />
+        </section>
+
+        {/* Content Tabs/Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Categories Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="xl:col-span-2"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-slate-800 tracking-tight">Financial Overview</h3>
+            </div>
+            {categories.length > 0 ? (
+              <div className="glass p-6 rounded-[2.5rem] premium-shadow border border-white/40">
+                <Categorylist categories={categories} />
+              </div>
+            ) : (
+              <div className="glass p-12 rounded-[2.5rem] text-center border border-white/40">
+                <p className="text-slate-400 font-medium italic">No data available for this period.</p>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Recent Activity Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-col"
+          >
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight mb-6">Recent Activity</h3>
+            <div className="glass p-6 rounded-[2.5rem] flex-1 premium-shadow border border-white/40 overflow-hidden">
+              {expenses.length > 0 ? (
+                <ExpencseList expenses={expenses} onUpdate={fetchDashboardData} />
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                  <GiExpense size={48} className="mb-4 opacity-20" />
+                  <p className="font-medium">All clear for today!</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
 
-        {/* Category List or no-data message */}
-        {categories.length > 0 ? (
-          <Categorylist categories={categories} />
-        ) : (
-          <div className="mt-8 text-center text-gray-600">
-            No budgets or categories found for {months[selectedMonth - 1]} {selectedYear}.
-          </div>
-        )}
+        {/* Reports & Exports */}
+        <motion.section 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="mt-12"
+        >
+          <Report />
+        </motion.section>
 
-        {/* Add Expense Button */}
-        <AddExpenseButton onOpen={() => setShowForm(true)} />
+        {/* Action Button */}
+        <div className="fixed bottom-8 right-8 z-[100]">
+          <AddExpenseButton onOpen={() => setShowForm(true)} />
+        </div>
 
-        {/* Expense Modal */}
-        {showForm && (
-          <AddExpenseForm
-            onClose={() => setShowForm(false)}
-            refreshDashboard={fetchDashboardData}
-          />
-        )}
-
-        {/* Budget list or no-data message */}
-        {expenses.length > 0 ? (
-          <ExpencseList />
-        ) : (
-          <div className="mt-4 text-center text-gray-500">
-            No expenses recorded for {months[selectedMonth - 1]} {selectedYear}.
-          </div>
-        )}
-
-        {/* Report */}
-        <Report />
-      </div>
+        {/* Modals */}
+        <AnimatePresence>
+          {showForm && (
+            <AddExpenseForm
+              onClose={() => setShowForm(false)}
+              refreshDashboard={fetchDashboardData}
+            />
+          )}
+        </AnimatePresence>
+      </motion.main>
     </div>
   );
 };

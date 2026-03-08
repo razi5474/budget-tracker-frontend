@@ -6,6 +6,7 @@ import Home from './pages/Dahboard/Home'
 import SettingsPage from './pages/Dahboard/SettingsPage'
 import NotFound from './pages/auth/NotFound'
 import ProtectedRoute from './routes/ProtectedRoute'
+import PublicRoute from './routes/PublicRoute'
 import { Toaster } from 'react-hot-toast'
 import Reports from './pages/Dahboard/Reports'
 
@@ -14,8 +15,16 @@ const App = () => {
     <BrowserRouter>
     <Toaster position="top-right" reverseOrder={false} />
       <Routes>
-        <Route path='/' element={<Login />} />
-        <Route path='/register' element={<Signup />} />
+        <Route path='/' element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
+        <Route path='/register' element={
+          <PublicRoute>
+            <Signup />
+          </PublicRoute>
+        } />
         
         {/* protected routes */}
         <Route path='/dashboard' element={

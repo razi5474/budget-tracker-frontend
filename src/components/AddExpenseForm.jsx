@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiPlus, FiChevronDown } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import api from "../utils/api";
 
@@ -12,14 +13,12 @@ const AddExpenseForm = ({ onClose, refreshDashboard }) => {
   const [date, setDate] = useState(today);
   const [loading, setLoading] = useState(false);
 
-  // Fetch categories from backend
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await api.get("/category");
         setCategories(res.data);
       } catch (err) {
-        console.error(err);
         toast.error("Failed to load categories");
       }
     };
@@ -30,14 +29,12 @@ const AddExpenseForm = ({ onClose, refreshDashboard }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!categoryID || !amount || !date) {
       toast.error("Please fill all fields");
       return;
     }
-
     if (Number(amount) <= 0) {
-      toast.error("Amount must be greater than 0");
+      toast.error("Amount must be positive");
       return;
     }
 
@@ -49,109 +46,113 @@ const AddExpenseForm = ({ onClose, refreshDashboard }) => {
         date,
       });
 
-      const data = res.data;
-
-      if (data.status === "over-budget") toast.error("Over Budget!");
-      else if (data.status === "within-budget") toast.success("Expense Added!");
-      else if (data.status === "no-budget")
-        toast("Expense added, but no budget set");
+      if (res.data.status === "over-budget") toast.error("Budget Exceeded!");
+      else toast.success("Transaction Recorded");
 
       if (refreshDashboard) refreshDashboard();
-
-      // Reset form
-      setCategoryID("");
-      setAmount("");
-      setDate(today);
-
       onClose();
     } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Failed to add expense");
+      toast.error("Failed to record expense");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4">
-      <div className="bg-white w-full max-w-sm p-6 rounded-xl shadow-xl relative animate-fade-up">
+    <div className="fixed inset-0 flex items-center justify-center z-[110] px-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+      />
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="glass-dark w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl relative border border-white/10"
+      >
         <button
-          className="absolute top-3 right-3 text-gray-600 hover:text-black"
+          className="absolute top-6 right-6 p-2 rounded-xl hover:bg-white/10 text-slate-400 transition-colors"
           onClick={onClose}
         >
-          <FiX size={22} />
+          <FiX size={20} />
         </button>
 
-        <h2 className="text-xl font-semibold mb-5 text-gray-800 text-center">
-          Add Expense
-        </h2>
+        <div className="mb-8">
+          <h2 className="text-2xl font-black text-white tracking-tight">Record Expense</h2>
+          <p className="text-slate-400 text-sm font-medium mt-1">Track your spending for better insights</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Category Dropdown */}
-          <div>
-            <label className="block mb-1 text-gray-700">Category</label>
-            <select
-              required
-              value={categoryID}
-              onChange={(e) => setCategoryID(e.target.value)}
-              className="w-full border px-3 py-2 rounded-md"
-            >
-              <option value="">Select Category</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Category</label>
+            <div className="relative group">
+              <select
+                required
+                value={categoryID}
+                onChange={(e) => setCategoryID(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 text-white px-5 py-4 rounded-2xl appearance-none focus:ring-2 focus:ring-amber-400/50 outline-none transition-all font-semibold"
+              >
+                <option value="" className="bg-slate-900">Select Category</option>
+                {categories.map((c) => (
+                  <option key={c._id} value={c._id} className="bg-slate-900">
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <FiChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-amber-400 transition-colors" />
+            </div>
           </div>
 
-          {/* Color Preview */}
-          {selectedCategory && (
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm text-gray-600">Category Color:</span>
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: selectedCategory.color }}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Amount</label>
+              <input
+                type="number"
+                required
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-white/5 border border-white/10 text-white px-5 py-4 rounded-2xl focus:ring-2 focus:ring-amber-400/50 outline-none transition-all font-black text-lg"
               />
             </div>
-          )}
 
-          {/* Amount */}
-          <div>
-            <label className="block mb-1 text-gray-700">Amount</label>
-            <input
-              type="number"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full border px-3 py-2 rounded-md"
-              placeholder="Enter amount"
-            />
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Date</label>
+              <input
+                type="date"
+                required
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 text-white px-5 py-4 rounded-2xl focus:ring-2 focus:ring-amber-400/50 outline-none transition-all font-semibold"
+              />
+            </div>
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="block mb-1 text-gray-700">Date</label>
-            <input
-              type="date"
-              required
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full border px-3 py-2 rounded-md"
-            />
-          </div>
-
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading}
-            className={`w-full py-2 rounded-md text-black font-semibold transition ${
-              loading ? "bg-gray-300" : "bg-[--color-primary] hover:bg-yellow-500"
+            className={`w-full py-4 rounded-2xl text-slate-900 font-bold tracking-tight shadow-xl transition-all flex items-center justify-center gap-2 ${
+              loading 
+                ? "bg-slate-700 text-slate-400 cursor-not-allowed" 
+                : "bg-gradient-to-r from-amber-400 to-orange-500 hover:shadow-amber-500/20"
             }`}
           >
-            {loading ? "Saving..." : "Save Expense"}
-          </button>
+            {loading ? (
+              <span className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+            ) : (
+              <>
+                <FiPlus className="stroke-[3px]" /> Save Transaction
+              </>
+            )}
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };
